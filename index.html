@@ -332,6 +332,100 @@
       padding: 2px 0;
     }
 
+    /* ── DETALHE ─────────────────────────── */
+    .detalhe-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 200;
+      display: none;
+      align-items: flex-end;
+    }
+    .detalhe-overlay.aberto { display: flex; }
+    .detalhe-modal {
+      background: var(--creme);
+      width: 100%;
+      border-radius: 22px 22px 0 0;
+      padding: 0 0 calc(28px + var(--safe-bottom));
+      animation: slideUp 0.22s ease-out;
+    }
+    .detalhe-alca {
+      width: 36px; height: 4px;
+      background: var(--borda);
+      border-radius: 2px;
+      margin: 10px auto 0;
+    }
+    .detalhe-cabecalho {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--borda);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .detalhe-titulo { font-size: 17px; font-weight: 800; }
+    .detalhe-titulo.d { color: var(--terra); }
+    .detalhe-titulo.r { color: var(--verde-mid); }
+    .detalhe-corpo { padding: 20px; }
+    .detalhe-linha {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+      gap: 12px;
+    }
+    .detalhe-chave {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: var(--muted);
+      flex-shrink: 0;
+      padding-top: 2px;
+    }
+    .detalhe-valor-txt {
+      font-size: 15px;
+      font-weight: 600;
+      text-align: right;
+    }
+    .detalhe-obs-box {
+      background: white;
+      border: 1.5px solid var(--borda);
+      border-radius: 11px;
+      padding: 12px 14px;
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--texto);
+      margin-top: 4px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .detalhe-acoes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .btn-detalhe-editar {
+      background: var(--verde-mid);
+      color: white;
+      border: none;
+      border-radius: 13px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-detalhe-excluir {
+      background: var(--terra-bg);
+      color: var(--terra);
+      border: 1.5px solid var(--terra);
+      border-radius: 13px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
     /* Empty */
     .vazio {
       text-align: center;
@@ -630,6 +724,39 @@
   <button class="btn-add r" onclick="abrirModal('receita')">+ Receita</button>
 </div>
 
+<!-- DETALHE -->
+<div class="detalhe-overlay" id="detalhe-overlay" onclick="fecharDetalheOverlay(event)">
+  <div class="detalhe-modal">
+    <div class="detalhe-alca"></div>
+    <div class="detalhe-cabecalho">
+      <div class="detalhe-titulo d" id="detalhe-titulo">Lançamento</div>
+      <button class="btn-cancelar" onclick="fecharDetalhe()">Fechar</button>
+    </div>
+    <div class="detalhe-corpo">
+      <div class="detalhe-linha">
+        <span class="detalhe-chave">Data</span>
+        <span class="detalhe-valor-txt" id="detalhe-data"></span>
+      </div>
+      <div class="detalhe-linha">
+        <span class="detalhe-chave">Categoria</span>
+        <span class="detalhe-valor-txt" id="detalhe-cat"></span>
+      </div>
+      <div class="detalhe-linha">
+        <span class="detalhe-chave">Valor</span>
+        <span class="detalhe-valor-txt" id="detalhe-valor"></span>
+      </div>
+      <div>
+        <div class="detalhe-chave" style="margin-bottom:8px">Observação</div>
+        <div class="detalhe-obs-box" id="detalhe-obs">—</div>
+      </div>
+      <div class="detalhe-acoes">
+        <button class="btn-detalhe-editar" id="detalhe-btn-editar">✏️ Editar</button>
+        <button class="btn-detalhe-excluir" id="detalhe-btn-excluir">🗑 Excluir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL -->
 <div class="overlay" id="overlay" onclick="fecharOverlay(event)">
   <div class="modal" id="modal">
@@ -749,20 +876,15 @@ function setCarregando(msg) {
 }
 
 // ── INIT ────────────────────────────────────────────────
+// ID fixo — sempre o mesmo bin, em qualquer dispositivo ou browser
+BIN_ID = '6a346fccf5f4af5e290ba7ca';
+
 async function init() {
   setCarregando('Carregando dados...');
   try {
-    BIN_ID = localStorage.getItem('gadoTerreno_binId');
-    if (!BIN_ID) {
-      setCarregando('Configurando pela primeira vez...');
-      BIN_ID = await jbCriarBin();
-      localStorage.setItem('gadoTerreno_binId', BIN_ID);
-      lancamentos = [...DADOS_INICIAIS];
-    } else {
-      lancamentos = await jbLer(BIN_ID);
-    }
+    lancamentos = await jbLer(BIN_ID);
   } catch(e) {
-    const salvo = localStorage.getItem('gadoTerreno_v2');
+    var salvo = localStorage.getItem('gadoTerreno_v2');
     lancamentos = salvo ? JSON.parse(salvo) : [...DADOS_INICIAIS];
     console.warn('Modo offline:', e);
   }
@@ -828,7 +950,7 @@ function renderDias(group) {
       var cat = getCat(t.tipo, t.cat);
       var cl = t.tipo === 'despesa' ? 'd' : 'r';
       var sinal = t.tipo === 'despesa' ? '−' : '+';
-      html += '<div class="item">'
+      html += '<div class="item" onclick="abrirDetalhe(\''+t.id+'\',event)">'
         + '<div class="item-icone ' + cl + '">' + cat.emoji + '</div>'
         + '<div class="item-info">'
         + '<div class="item-cat">' + cat.label + '</div>'
@@ -1029,6 +1151,43 @@ function entrar() {
     document.getElementById('login-erro').textContent = 'Senha incorreta. Tente novamente.';
     document.getElementById('login-senha').value = '';
   }
+}
+
+// ── DETALHE ──────────────────────────────────────────────
+var _detalheId = null;
+
+function abrirDetalhe(id, event) {
+  if (event && (event.target.classList.contains('btn-del') || event.target.classList.contains('btn-edit'))) return;
+  var t = lancamentos.find(function(l) { return l.id === id; });
+  if (!t) return;
+  _detalheId = id;
+  var cat = getCat(t.tipo, t.cat);
+  var cl = t.tipo === 'despesa' ? 'd' : 'r';
+  var sinal = t.tipo === 'despesa' ? '−' : '+';
+
+  var titulo = document.getElementById('detalhe-titulo');
+  titulo.textContent = cat.emoji + ' ' + cat.label;
+  titulo.className = 'detalhe-titulo ' + cl;
+
+  document.getElementById('detalhe-data').textContent = fmtData(t.data) + ' (' + ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][new Date(t.data+'T12:00:00').getDay()] + ')';
+  document.getElementById('detalhe-cat').textContent = cat.label;
+  document.getElementById('detalhe-valor').textContent = sinal + ' ' + fmt(t.valor);
+  document.getElementById('detalhe-valor').style.color = t.tipo === 'despesa' ? 'var(--terra)' : 'var(--verde-mid)';
+  document.getElementById('detalhe-obs').textContent = t.obs || '(sem observação)';
+
+  document.getElementById('detalhe-btn-editar').onclick = function() { fecharDetalhe(); abrirEditar(id); };
+  document.getElementById('detalhe-btn-excluir').onclick = function() { fecharDetalhe(); excluir(id); };
+
+  document.getElementById('detalhe-overlay').classList.add('aberto');
+}
+
+function fecharDetalhe() {
+  document.getElementById('detalhe-overlay').classList.remove('aberto');
+  _detalheId = null;
+}
+
+function fecharDetalheOverlay(e) {
+  if (e.target === document.getElementById('detalhe-overlay')) fecharDetalhe();
 }
 
 function abrirEditar(id) {
