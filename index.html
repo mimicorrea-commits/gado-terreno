@@ -319,6 +319,16 @@
       padding: 2px 0;
     }
 
+    .btn-edit {
+      background: none;
+      border: none;
+      color: #AAC8BB;
+      font-size: 13px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 0;
+    }
+
     /* Empty */
     .vazio {
       text-align: center;
@@ -728,6 +738,7 @@ let lancamentos = [];
 let mesSelecionado = 'todos';
 let tipoModal = 'despesa';
 let BIN_ID = null;
+let editarId = null;
 
 function setCarregando(msg) {
   document.getElementById('lista').innerHTML =
@@ -822,7 +833,8 @@ function renderDias(group) {
         + '</div>'
         + '<div class="item-direita">'
         + '<div class="item-valor ' + cl + '">' + sinal + ' ' + fmt(t.valor).replace('R$ ','') + '</div>'
-        + '<button class="btn-del" onclick="excluir('' + t.id + '')">✕</button>'
+        + '<button class="btn-edit" onclick="abrirEditar(this.dataset.id)" data-id="' + t.id + '">✏️</button>'
+        + '<button class="btn-del" onclick="excluir(this.dataset.id)" data-id="' + t.id + '">✕</button>'
         + '</div>'
         + '</div>';
     });
@@ -940,6 +952,8 @@ function abrirModal(tipo) {
 
 function fecharModal() {
   document.getElementById('overlay').classList.remove('aberto');
+  editarId = null;
+  document.getElementById('btn-salvar').textContent = 'Salvar';
 }
 
 function fecharOverlay(e) {
@@ -957,11 +971,15 @@ function salvar() {
     return;
   }
 
-  lancamentos.push({
-    id: Date.now().toString(),
-    tipo: tipoModal,
-    data, cat, valor, obs
-  });
+  if (editarId) {
+    var idx = lancamentos.findIndex(function(l) { return l.id === editarId; });
+    if (idx !== -1) {
+      lancamentos[idx] = { id: editarId, tipo: tipoModal, data: data, cat: cat, valor: valor, obs: obs };
+    }
+    editarId = null;
+  } else {
+    lancamentos.push({ id: Date.now().toString(), tipo: tipoModal, data: data, cat: cat, valor: valor, obs: obs });
+  }
 
   salvar_dados();
   fecharModal();
@@ -1007,6 +1025,32 @@ function entrar() {
     document.getElementById('login-erro').textContent = 'Senha incorreta. Tente novamente.';
     document.getElementById('login-senha').value = '';
   }
+}
+
+function abrirEditar(id) {
+  var t = lancamentos.find(function(l) { return l.id === id; });
+  if (!t) return;
+  editarId = id;
+  tipoModal = t.tipo;
+
+  var titulo = document.getElementById('modal-titulo');
+  var sel    = document.getElementById('f-cat');
+  var btn    = document.getElementById('btn-salvar');
+
+  titulo.textContent = t.tipo === 'despesa' ? '✏️ Editar Despesa' : '✏️ Editar Receita';
+  titulo.className = 'modal-titulo ' + (t.tipo === 'despesa' ? 'd' : 'r');
+  btn.className    = 'btn-salvar ' + (t.tipo === 'despesa' ? 'd' : 'r');
+  btn.textContent  = 'Salvar alterações';
+
+  document.getElementById('f-data').value  = t.data;
+  document.getElementById('f-valor').value = t.valor;
+  document.getElementById('f-obs').value   = t.obs || '';
+
+  sel.innerHTML = CATS[t.tipo].map(function(c) {
+    return '<option value="' + c.id + '"' + (c.id === t.cat ? ' selected' : '') + '>' + c.emoji + ' ' + c.label + '</option>';
+  }).join('');
+
+  document.getElementById('overlay').classList.add('aberto');
 }
 
 function sair() {
