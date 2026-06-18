@@ -563,6 +563,9 @@
     placeholder="••••••••"
     onkeydown="if(event.key==='Enter') entrar()"
     autocomplete="current-password"
+    autocorrect="off"
+    autocapitalize="none"
+    spellcheck="false"
   >
   <div class="login-erro" id="login-erro"></div>
   <button class="btn-entrar" onclick="entrar()">Entrar</button>
@@ -989,25 +992,23 @@ function exportarCSV() {
 }
 
 // ── LOGIN ────────────────────────────────────────────────
-const HASH_SENHA = 'f010eee0e30259598ff1b92e5dd8bcd052ff2c8dc15ea0eeec320e8a55550cdc';
+const _SK = 'TWlqYzMwMTBA';
 
-async function sha256(texto) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(texto));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
-async function entrar() {
-  const senha = document.getElementById('login-senha').value;
-  if (!senha) return;
-  const hash = await sha256(senha);
-  if (hash === HASH_SENHA) {
-    sessionStorage.setItem('gadoAuth', '1');
-    document.getElementById('login-tela').classList.add('oculto');
-    document.getElementById('login-erro').textContent = '';
-  } else {
-    document.getElementById('login-erro').textContent = 'Senha incorreta. Tente novamente.';
-    document.getElementById('login-senha').value = '';
-    document.getElementById('login-senha').focus();
+function entrar() {
+  try {
+    const senha = document.getElementById('login-senha').value;
+    if (!senha) return;
+    if (btoa(unescape(encodeURIComponent(senha))) === _SK) {
+      sessionStorage.setItem('gadoAuth', '1');
+      document.getElementById('login-tela').classList.add('oculto');
+      document.getElementById('login-erro').textContent = '';
+    } else {
+      document.getElementById('login-erro').textContent = 'Senha incorreta. Tente novamente.';
+      document.getElementById('login-senha').value = '';
+      document.getElementById('login-senha').focus();
+    }
+  } catch(e) {
+    document.getElementById('login-erro').textContent = 'Erro ao verificar senha. Tente novamente.';
   }
 }
 
