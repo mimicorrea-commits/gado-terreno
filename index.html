@@ -995,20 +995,15 @@ function exportarCSV() {
 const _SK = 'TWlqYzMwMTBA';
 
 function entrar() {
-  try {
-    const senha = document.getElementById('login-senha').value;
-    if (!senha) return;
-    if (btoa(unescape(encodeURIComponent(senha))) === _SK) {
-      sessionStorage.setItem('gadoAuth', '1');
-      document.getElementById('login-tela').classList.add('oculto');
-      document.getElementById('login-erro').textContent = '';
-    } else {
-      document.getElementById('login-erro').textContent = 'Senha incorreta. Tente novamente.';
-      document.getElementById('login-senha').value = '';
-      document.getElementById('login-senha').focus();
-    }
-  } catch(e) {
-    document.getElementById('login-erro').textContent = 'Erro ao verificar senha. Tente novamente.';
+  var s = document.getElementById('login-senha').value;
+  var ok = (s === atob('TWlqYzMwMTBA'));
+  if (ok) {
+    try { sessionStorage.setItem('gadoAuth','1'); } catch(e){}
+    document.getElementById('login-tela').classList.add('oculto');
+    document.getElementById('login-erro').textContent = '';
+  } else {
+    document.getElementById('login-erro').textContent = 'Senha incorreta. Tente novamente.';
+    document.getElementById('login-senha').value = '';
   }
 }
 
@@ -1022,11 +1017,11 @@ function sair() {
 }
 
 function verificarSessao() {
-  if (sessionStorage.getItem('gadoAuth') === '1') {
-    document.getElementById('login-tela').classList.add('oculto');
-  } else {
-    setTimeout(()=>document.getElementById('login-senha').focus(), 300);
-  }
+  try {
+    if (sessionStorage.getItem('gadoAuth') === '1') {
+      document.getElementById('login-tela').classList.add('oculto');
+    }
+  } catch(e) {}
 }
 
 verificarSessao();
