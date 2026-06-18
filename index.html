@@ -230,7 +230,10 @@
       align-items: center;
       gap: 11px;
       box-shadow: var(--sombra);
+      cursor: pointer;
+      transition: opacity 0.12s;
     }
+    .item:active { opacity: 0.75; }
 
     .item-icone {
       width: 38px;
@@ -958,8 +961,7 @@ function renderDias(group) {
         + '</div>'
         + '<div class="item-direita">'
         + '<div class="item-valor ' + cl + '">' + sinal + ' ' + fmt(t.valor).replace('R$ ','') + '</div>'
-        + '<button class="btn-edit" onclick="abrirEditar(this.dataset.id)" data-id="' + t.id + '">✏️</button>'
-        + '<button class="btn-del" onclick="excluir(this.dataset.id)" data-id="' + t.id + '">✕</button>'
+        + '<div style="color:var(--borda);font-size:16px;margin-top:2px">›</div>'
         + '</div>'
         + '</div>';
     });
