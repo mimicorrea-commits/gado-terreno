@@ -792,6 +792,44 @@ function getCat(tipo, catId) {
   return (CATS[tipo]||[]).find(c => c.id === catId) || { label: catId, emoji:'📌' };
 }
 
+// ── HELPER: renderizar itens por dia ────────────────────
+function renderDias(group) {
+  var semanas = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  var dias = {};
+  group.forEach(function(t) {
+    if (!dias[t.data]) dias[t.data] = [];
+    dias[t.data].push(t);
+  });
+  return Object.keys(dias).sort().reverse().map(function(dia) {
+    var parts = dia.split('-');
+    var d = parts[2], mo = parts[1], y = parts[0];
+    var diaSemana = semanas[new Date(dia + 'T12:00:00').getDay()];
+    var itens = dias[dia];
+    var html = '<div class="dia-header">'
+      + '<span class="dia-label">' + d + '/' + mo + '</span>'
+      + '<span class="dia-semana">' + diaSemana + '</span>'
+      + '<div class="dia-linha"></div>'
+      + '</div>';
+    itens.forEach(function(t) {
+      var cat = getCat(t.tipo, t.cat);
+      var cl = t.tipo === 'despesa' ? 'd' : 'r';
+      var sinal = t.tipo === 'despesa' ? '−' : '+';
+      html += '<div class="item">'
+        + '<div class="item-icone ' + cl + '">' + cat.emoji + '</div>'
+        + '<div class="item-info">'
+        + '<div class="item-cat">' + cat.label + '</div>'
+        + (t.obs ? '<div class="item-obs">' + t.obs + '</div>' : '')
+        + '</div>'
+        + '<div class="item-direita">'
+        + '<div class="item-valor ' + cl + '">' + sinal + ' ' + fmt(t.valor).replace('R$ ','') + '</div>'
+        + '<button class="btn-del" onclick="excluir('' + t.id + '')">✕</button>'
+        + '</div>'
+        + '</div>';
+    });
+    return html;
+  }).join('');
+}
+
 // ── RENDERIZAR ───────────────────────────────────────────
 function renderizar() {
   const totalD = lancamentos.filter(t=>t.tipo==='despesa').reduce((s,t)=>s+t.valor,0);
@@ -866,43 +904,7 @@ function renderizar() {
             ${gS<0?'−':'+'}${fmt(Math.abs(gS)).replace('R$ ','')}
           </div>
         </div>
-        ${(() => {
-          // Agrupar por dia dentro do mês
-          const dias = {};
-          group.forEach(t => {
-            if (!dias[t.data]) dias[t.data] = [];
-            dias[t.data].push(t);
-          });
-          const semanas = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-          return Object.keys(dias).sort().reverse().map(dia => {
-            const [y,mo,d] = dia.split('-');
-            const diaSemana = semanas[new Date(dia+'T12:00:00').getDay()];
-            const itens = dias[dia];
-            return `
-              <div class="dia-header">
-                <span class="dia-label">${d}/${mo}</span>
-                <span class="dia-semana">${diaSemana}</span>
-                <div class="dia-linha"></div>
-              </div>
-              ${itens.map(t => {
-                const cat = getCat(t.tipo, t.cat);
-                const cl  = t.tipo==='despesa' ? 'd' : 'r';
-                const sinal = t.tipo==='despesa' ? '−' : '+';
-                return \`
-                  <div class="item">
-                    <div class="item-icone \${cl}">\${cat.emoji}</div>
-                    <div class="item-info">
-                      <div class="item-cat">\${cat.label}</div>
-                      \${t.obs ? \`<div class="item-obs">\${t.obs}</div>\` : ''}
-                    </div>
-                    <div class="item-direita">
-                      <div class="item-valor \${cl}">\${sinal} \${fmt(t.valor).replace('R$ ','')}</div>
-                      <button class="btn-del" onclick="excluir('\${t.id}')">✕</button>
-                    </div>
-                  </div>\`;
-              }).join('')}`;
-          }).join('');
-        })()}
+        ${renderDias(group)}
       </div>`;
   }).join('');
 }
