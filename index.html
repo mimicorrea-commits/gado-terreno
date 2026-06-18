@@ -260,9 +260,12 @@
       font-size: 12px;
       color: var(--muted);
       margin-top: 1px;
-      white-space: nowrap;
+      white-space: normal;
       overflow: hidden;
-      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      line-height: 1.4;
     }
 
     .item-data {
@@ -650,7 +653,7 @@
       </div>
       <div class="campo">
         <label class="campo-label">Observação (opcional)</label>
-        <input type="text" class="campo-input" id="f-obs" placeholder="Ex: 3 bezerros, frete incluso...">
+        <textarea class="campo-input" id="f-obs" placeholder="Ex: 3 bezerros, frete incluso..." rows="3" style="resize:none; line-height:1.5;"></textarea>
       </div>
       <button class="btn-salvar d" id="btn-salvar" onclick="salvar()">Salvar</button>
     </div>
@@ -943,6 +946,7 @@ function abrirModal(tipo) {
   document.getElementById('f-data').value  = `${hoje.getFullYear()}-${pad(hoje.getMonth()+1)}-${pad(hoje.getDate())}`;
   document.getElementById('f-valor').value = '';
   document.getElementById('f-obs').value   = '';
+  document.getElementById('f-obs').style.height = 'auto';
 
   sel.innerHTML = CATS[tipo].map(c=>`<option value="${c.id}">${c.emoji} ${c.label}</option>`).join('');
 
