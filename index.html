@@ -6,6 +6,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Gado & Terreno">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Gado & Terreno</title>
   <style>
     :root {
@@ -160,7 +163,33 @@
     .resumo-valor.d { color: var(--terra); }
     .resumo-valor.r { color: var(--verde-mid); }
 
-    /* ── FILTRO MÊS ─────────────────────────── */
+    /* ── FILTRO ANO + MÊS ──────────────────────── */
+    .filtro-ano {
+      display: flex;
+      gap: 8px;
+      padding: 14px 16px 4px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .filtro-ano::-webkit-scrollbar { display: none; }
+    .chip-ano {
+      flex-shrink: 0;
+      background: var(--verde-bg);
+      border: 1.5px solid var(--verde-mid);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+      color: var(--verde-mid);
+      transition: all 0.12s;
+    }
+    .chip-ano.ativo {
+      background: var(--verde);
+      border-color: var(--verde);
+      color: #fff;
+    }
     .filtro {
       display: flex;
       gap: 8px;
@@ -715,7 +744,9 @@
   </div>
 </div>
 
-<!-- FILTRO -->
+<!-- FILTRO ANO -->
+<div class="filtro-ano" id="filtro-ano"></div>
+<!-- FILTRO MÊS -->
 <div class="filtro" id="filtro"></div>
 
 <!-- LISTA -->
@@ -868,6 +899,7 @@ async function jbSalvar(binId, dados) {
 
 // ── ESTADO ────────────────────────────────────────────────
 let lancamentos = [];
+let anoSelecionado = 'todos';
 let mesSelecionado = 'todos';
 let tipoModal = 'despesa';
 let BIN_ID = null;
@@ -994,21 +1026,32 @@ function renderizar() {
     seEl.textContent = '📈';
   }
 
-  // Meses únicos
-  const meses = [...new Set(lancamentos.map(t=>chaveMes(t.data)))].sort().reverse();
+  // Anos únicos
+  const anos = [...new Set(lancamentos.map(t=>t.data.substring(0,4)))].sort().reverse();
+  const filtroAnoEl = document.getElementById('filtro-ano');
+  // Build year chips using array join to avoid quote issues
+  var anoChips = ['<button class="chip-ano ' + (anoSelecionado==='todos' ? 'ativo' : '') + '" onclick="selecionarAno(String.fromCharCode(116,111,100,111,115))">Todos</button>'];
+  anos.forEach(function(a) {
+    anoChips.push('<button class="chip-ano ' + (anoSelecionado===a ? 'ativo' : '') + '" onclick="selecionarAno(' + JSON.stringify(a) + ')">' + a + '</button>');
+  });
+  filtroAnoEl.innerHTML = anoChips.join('');
 
-  // Chips
-  const filtroEl = document.getElementById('filtro');
-  filtroEl.innerHTML =
-    `<button class="chip ${mesSelecionado==='todos'?'ativo':''}" onclick="selecionarMes('todos')">Todos</button>` +
-    meses.map(m =>
-      `<button class="chip ${mesSelecionado===m?'ativo':''}" onclick="selecionarMes('${m}')">${labelMes(m)}</button>`
-    ).join('');
+  // Meses do ano selecionado
+  var lancAno = anoSelecionado === 'todos' ? lancamentos : lancamentos.filter(function(t){ return t.data.substring(0,4) === anoSelecionado; });
+  var meses = [...new Set(lancAno.map(function(t){ return chaveMes(t.data); }))].sort().reverse();
+
+  // Chips de mês
+  var filtroEl = document.getElementById('filtro');
+  var mesChips = ['<button class="chip ' + (mesSelecionado==='todos' ? 'ativo' : '') + '" onclick="selecionarMes(String.fromCharCode(116,111,100,111,115))">Todos</button>'];
+  meses.forEach(function(m) {
+    mesChips.push('<button class="chip ' + (mesSelecionado===m ? 'ativo' : '') + '" onclick="selecionarMes(' + JSON.stringify(m) + ')">' + labelMes(m) + '</button>');
+  });
+  filtroEl.innerHTML = mesChips.join('');
 
   // Filtragem
-  const itens = mesSelecionado === 'todos'
-    ? [...lancamentos]
-    : lancamentos.filter(t => chaveMes(t.data) === mesSelecionado);
+  var itens = lancAno.filter(function(t) {
+    return mesSelecionado === 'todos' || chaveMes(t.data) === mesSelecionado;
+  });
 
   // Agrupar por mês
   const grupos = {};
@@ -1046,6 +1089,12 @@ function renderizar() {
         ${renderDias(group)}
       </div>`;
   }).join('');
+}
+
+function selecionarAno(a) {
+  anoSelecionado = a;
+  mesSelecionado = 'todos';
+  renderizar();
 }
 
 function selecionarMes(m) {
