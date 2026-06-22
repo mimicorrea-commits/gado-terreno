@@ -1029,10 +1029,10 @@ function renderizar() {
   // Anos únicos
   const anos = [...new Set(lancamentos.map(t=>t.data.substring(0,4)))].sort().reverse();
   const filtroAnoEl = document.getElementById('filtro-ano');
-  // Build year chips using array join to avoid quote issues
-  var anoChips = ['<button class="chip-ano ' + (anoSelecionado==='todos' ? 'ativo' : '') + '" onclick="selecionarAno(String.fromCharCode(116,111,100,111,115))">Todos</button>'];
+  // Chips de ano
+  var anoChips = ['<button class="chip-ano ' + (anoSelecionado==='todos' ? 'ativo' : '') + '" data-val="todos" onclick="selecionarAno(this.dataset.val)">Todos</button>'];
   anos.forEach(function(a) {
-    anoChips.push('<button class="chip-ano ' + (anoSelecionado===a ? 'ativo' : '') + '" onclick="selecionarAno(' + JSON.stringify(a) + ')">' + a + '</button>');
+    anoChips.push('<button class="chip-ano ' + (anoSelecionado===a ? 'ativo' : '') + '" data-val="' + a + '" onclick="selecionarAno(this.dataset.val)">' + a + '</button>');
   });
   filtroAnoEl.innerHTML = anoChips.join('');
 
@@ -1042,9 +1042,9 @@ function renderizar() {
 
   // Chips de mês
   var filtroEl = document.getElementById('filtro');
-  var mesChips = ['<button class="chip ' + (mesSelecionado==='todos' ? 'ativo' : '') + '" onclick="selecionarMes(String.fromCharCode(116,111,100,111,115))">Todos</button>'];
+  var mesChips = ['<button class="chip ' + (mesSelecionado==='todos' ? 'ativo' : '') + '" data-val="todos" onclick="selecionarMes(this.dataset.val)">Todos</button>'];
   meses.forEach(function(m) {
-    mesChips.push('<button class="chip ' + (mesSelecionado===m ? 'ativo' : '') + '" onclick="selecionarMes(' + JSON.stringify(m) + ')">' + labelMes(m) + '</button>');
+    mesChips.push('<button class="chip ' + (mesSelecionado===m ? 'ativo' : '') + '" data-val="' + m + '" onclick="selecionarMes(this.dataset.val)">' + labelMes(m) + '</button>');
   });
   filtroEl.innerHTML = mesChips.join('');
 
