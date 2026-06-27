@@ -653,9 +653,17 @@
   .pdf-item-obs { font-size: 11px; color: var(--muted); margin-top: 1px; }
   .pdf-item-val { font-size: 13px; font-weight: 800; white-space: nowrap; }
   @media print {
+    @page { margin: 12mm; size: A4 portrait; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     .pdf-topbar { display: none !important; }
     body > *:not(.pdf-overlay) { display: none !important; }
-    .pdf-conteudo { overflow: visible !important; }
+    .pdf-overlay { position: static !important; background: white !important; }
+    .pdf-conteudo { overflow: visible !important; padding: 0 !important; }
+    .pdf-item { page-break-inside: avoid; }
+    .pdf-mes-header { page-break-after: avoid; }
+    .pdf-dia-sub { page-break-after: avoid; }
+    .pdf-resumo { page-break-inside: avoid; }
+    .pdf-resumo-card { box-shadow: none !important; border: 1px solid #ddd; }
   }
 
   /* ── LOGIN ─────────────────────────────────── */
