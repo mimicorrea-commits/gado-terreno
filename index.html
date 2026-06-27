@@ -610,6 +610,54 @@
     .btn-salvar:active { opacity: 0.8; }
     .btn-salvar.d { background: var(--terra); }
     .btn-salvar.r { background: var(--verde-mid); }
+  /* ── PDF PREVIEW ───────────────────────── */
+  .pdf-overlay {
+    position: fixed; inset: 0; background: #f5f5f0;
+    z-index: 500; display: none; flex-direction: column;
+  }
+  .pdf-overlay.aberto { display: flex; }
+  .pdf-topbar {
+    background: var(--verde); color: white;
+    padding: calc(var(--safe-top) + 12px) 16px 12px;
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+  }
+  .pdf-topbar-titulo { font-size: 16px; font-weight: 800; }
+  .btn-pdf-fechar {
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+    color: white; border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  .btn-pdf-imprimir {
+    background: white; border: none; color: var(--verde);
+    border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 800; cursor: pointer;
+  }
+  .pdf-conteudo {
+    flex: 1; overflow-y: auto;
+    padding: 20px 16px; padding-bottom: calc(20px + var(--safe-bottom));
+  }
+  .pdf-resumo { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .pdf-resumo-card { background: white; border-radius: 10px; padding: 10px 12px; box-shadow: var(--sombra); }
+  .pdf-resumo-label { font-size: 9px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); margin-bottom: 3px; }
+  .pdf-resumo-val { font-size: 14px; font-weight: 800; }
+  .pdf-periodo { font-size: 12px; color: var(--muted); margin-bottom: 16px; text-align: center; }
+  .pdf-mes-header {
+    display: flex; justify-content: space-between;
+    font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; color: var(--muted);
+    padding: 6px 0; border-bottom: 2px solid var(--borda); margin-bottom: 8px; margin-top: 16px;
+  }
+  .pdf-dia-sub { font-size: 11px; font-weight: 800; color: var(--verde); margin: 10px 0 4px; }
+  .pdf-dia-sw { color: var(--muted); font-weight: 500; }
+  .pdf-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0ebe0; }
+  .pdf-item-emoji { font-size: 16px; width: 22px; flex-shrink: 0; }
+  .pdf-item-info { flex: 1; }
+  .pdf-item-cat { font-size: 13px; font-weight: 700; }
+  .pdf-item-obs { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .pdf-item-val { font-size: 13px; font-weight: 800; white-space: nowrap; }
+  @media print {
+    .pdf-topbar { display: none !important; }
+    body > *:not(.pdf-overlay) { display: none !important; }
+    .pdf-conteudo { overflow: visible !important; }
+  }
+
   /* ── LOGIN ─────────────────────────────────── */
   .login-tela {
     position: fixed;
@@ -689,6 +737,16 @@
   </style>
 </head>
 <body>
+
+<!-- PDF PREVIEW -->
+<div class="pdf-overlay" id="pdf-overlay">
+  <div class="pdf-topbar">
+    <button class="btn-pdf-fechar" onclick="fecharPDF()">← Voltar</button>
+    <div class="pdf-topbar-titulo">Relatório</div>
+    <button class="btn-pdf-imprimir" onclick="window.print()">🖨 Imprimir</button>
+  </div>
+  <div class="pdf-conteudo" id="pdf-conteudo"></div>
+</div>
 
 <!-- TELA DE LOGIN -->
 <div class="login-tela" id="login-tela">
@@ -1180,14 +1238,13 @@ function exportarPDF() {
   });
 
   var periodoLabel = mesSelecionado !== 'todos'
-    ? 'Período: ' + labelMes(mesSelecionado)
-    : (anoSelecionado !== 'todos' ? 'Ano: ' + anoSelecionado : 'Todos os lançamentos');
+    ? labelMes(mesSelecionado)
+    : (anoSelecionado !== 'todos' ? anoSelecionado : 'Todos os lançamentos');
 
   var totalD = dadosPDF.filter(function(t){ return t.tipo==='despesa'; }).reduce(function(s,t){ return s+t.valor; }, 0);
   var totalR = dadosPDF.filter(function(t){ return t.tipo==='receita'; }).reduce(function(s,t){ return s+t.valor; }, 0);
   var saldo  = totalR - totalD;
 
-  // Agrupar por mês e dia
   var grupos = {};
   dadosPDF.slice().sort(function(a,b){ return a.data.localeCompare(b.data); }).forEach(function(t) {
     var mk = chaveMes(t.data);
@@ -1199,7 +1256,13 @@ function exportarPDF() {
   var semanas = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   var mesesNome = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
-  var linhas = '';
+  var html = '<div class="pdf-periodo">Período: <strong>' + periodoLabel + '</strong> &nbsp;|&nbsp; Gerado em ' + new Date().toLocaleDateString('pt-BR') + '</div>';
+  html += '<div class="pdf-resumo">';
+  html += '<div class="pdf-resumo-card"><div class="pdf-resumo-label">Despesas</div><div class="pdf-resumo-val" style="color:#8B4513">' + fmt(totalD) + '</div></div>';
+  html += '<div class="pdf-resumo-card"><div class="pdf-resumo-label">Receitas</div><div class="pdf-resumo-val" style="color:#2E7A4A">' + fmt(totalR) + '</div></div>';
+  html += '<div class="pdf-resumo-card"><div class="pdf-resumo-label">' + (saldo<0?'Déficit':'Superávit') + '</div><div class="pdf-resumo-val" style="color:' + (saldo<0?'#8B4513':'#2E7A4A') + '">' + fmt(Math.abs(saldo)) + '</div></div>';
+  html += '</div>';
+
   Object.keys(grupos).sort().forEach(function(mk) {
     var partes = mk.split('-');
     var nomeMes = mesesNome[parseInt(partes[1])-1] + ' ' + partes[0];
@@ -1207,66 +1270,34 @@ function exportarPDF() {
     var totalMesD = 0, totalMesR = 0;
     Object.keys(diasGrupo).forEach(function(dia) {
       diasGrupo[dia].forEach(function(t) {
-        if (t.tipo==='despesa') totalMesD += t.valor;
-        else totalMesR += t.valor;
+        if (t.tipo==='despesa') totalMesD += t.valor; else totalMesR += t.valor;
       });
     });
     var saldoMes = totalMesR - totalMesD;
-    linhas += '<div class="mes-bloco">';
-    linhas += '<div class="mes-header"><span>' + nomeMes + '</span><span style="color:' + (saldoMes<0?'#8B4513':'#2E7A4A') + '">' + (saldoMes<0?'−':'+') + ' ' + fmt(Math.abs(saldoMes)) + '</span></div>';
+    html += '<div class="pdf-mes-header"><span>' + nomeMes + '</span><span style="color:' + (saldoMes<0?'#8B4513':'#2E7A4A') + '">' + (saldoMes<0?'−':'+') + ' ' + fmt(Math.abs(saldoMes)) + '</span></div>';
     Object.keys(diasGrupo).sort().forEach(function(dia) {
       var p = dia.split('-');
       var ds = semanas[new Date(dia+'T12:00:00').getDay()];
-      linhas += '<div class="dia-sub">' + p[2] + '/' + p[1] + ' <span class="dia-sw">' + ds + '</span></div>';
+      html += '<div class="pdf-dia-sub">' + p[2] + '/' + p[1] + ' <span class="pdf-dia-sw">' + ds + '</span></div>';
       diasGrupo[dia].forEach(function(t) {
         var cat = getCat(t.tipo, t.cat);
         var sinal = t.tipo==='despesa' ? '−' : '+';
         var cor = t.tipo==='despesa' ? '#8B4513' : '#2E7A4A';
-        linhas += '<div class="item-pdf">';
-        linhas += '<span class="item-emoji">' + cat.emoji + '</span>';
-        linhas += '<span class="item-cat">' + cat.label + (t.obs ? '<br><span class="item-obs-pdf">' + t.obs + '</span>' : '') + '</span>';
-        linhas += '<span class="item-val" style="color:' + cor + '">' + sinal + ' ' + fmt(t.valor) + '</span>';
-        linhas += '</div>';
+        html += '<div class="pdf-item">';
+        html += '<span class="pdf-item-emoji">' + cat.emoji + '</span>';
+        html += '<span class="pdf-item-info"><div class="pdf-item-cat">' + cat.label + '</div>' + (t.obs ? '<div class="pdf-item-obs">' + t.obs + '</div>' : '') + '</span>';
+        html += '<span class="pdf-item-val" style="color:' + cor + '">' + sinal + ' ' + fmt(t.valor) + '</span>';
+        html += '</div>';
       });
     });
-    linhas += '</div>';
   });
 
-  var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">'
-    + '<title>Gado & Terreno — Relatório</title>'
-    + '<style>'
-    + 'body{font-family:-apple-system,sans-serif;padding:24px;color:#1C1C1C;max-width:600px;margin:0 auto}'
-    + 'h1{font-size:20px;color:#1A3C2A;margin-bottom:4px}'
-    + '.sub{font-size:12px;color:#777;margin-bottom:20px}'
-    + '.resumo{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px}'
-    + '.resumo-card{background:#f5f5f0;border-radius:8px;padding:10px 12px}'
-    + '.resumo-label{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:#777}'
-    + '.resumo-val{font-size:16px;font-weight:800;margin-top:2px}'
-    + '.mes-bloco{margin-bottom:20px}'
-    + '.mes-header{display:flex;justify-content:space-between;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:#777;padding:6px 0;border-bottom:2px solid #E0D8C0;margin-bottom:8px}'
-    + '.dia-sub{font-size:11px;font-weight:700;color:#1A3C2A;margin:10px 0 4px}'
-    + '.dia-sw{color:#999;font-weight:500}'
-    + '.item-pdf{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f0ebe0}'
-    + '.item-emoji{font-size:18px;width:24px;flex-shrink:0}'
-    + '.item-cat{flex:1;font-size:13px;font-weight:600;line-height:1.5}'
-    + '.item-obs-pdf{font-size:12px;font-weight:400;color:#777}'
-    + '.item-val{font-size:13px;font-weight:800;white-space:nowrap}'
-    + '@media print{body{padding:0}}'
-    + '</style></head><body>'
-    + '<h1>🐄 Gado & Terreno</h1>'
-    + '<div class="sub">Relatório gerado em ' + new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'}) + ' &nbsp;|&nbsp; ' + periodoLabel + '</div>'
-    + '<div class="resumo">'
-    + '<div class="resumo-card"><div class="resumo-label">Despesas</div><div class="resumo-val" style="color:#8B4513">' + fmt(totalD) + '</div></div>'
-    + '<div class="resumo-card"><div class="resumo-label">Receitas</div><div class="resumo-val" style="color:#2E7A4A">' + fmt(totalR) + '</div></div>'
-    + '<div class="resumo-card"><div class="resumo-label">' + (saldo<0?'Déficit':'Superávit') + '</div><div class="resumo-val" style="color:' + (saldo<0?'#8B4513':'#2E7A4A') + '">' + fmt(Math.abs(saldo)) + '</div></div>'
-    + '</div>'
-    + linhas
-    + '<script>window.onload=function(){window.print();}<\/script>'
-    + '</body></html>';
+  document.getElementById('pdf-conteudo').innerHTML = html;
+  document.getElementById('pdf-overlay').classList.add('aberto');
+}
 
-  var w = window.open('', '_blank');
-  w.document.write(html);
-  w.document.close();
+function fecharPDF() {
+  document.getElementById('pdf-overlay').classList.remove('aberto');
 }
 
 // ── LOGIN ────────────────────────────────────────────────
